@@ -6,3 +6,44 @@
 .sprint-notes{flex-basis:100%;width:100%;border-top:1px solid #d6e4d9;padding-top:14px}.sprint-notes label{margin:0 0 8px;font-size:12px;color:#50695b}.sprint-notes label small{margin-left:8px;color:#82998a;font-size:10px;font-weight:400}.sprint-notes textarea{display:block;width:100%;resize:vertical;line-height:1.7;margin-bottom:12px}.sprint-notes textarea:last-child{margin-bottom:0}.sprint-notes .muted{max-width:none}
 
 .stats[hidden],.sprintbox[hidden]{display:none}
+
+/* Theme colors also cover native inputs, dialogs and calendar controls. */
+:root{color-scheme:light}
+#themeToggle{white-space:nowrap;min-width:108px}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#111a19;--ink:#e5eeea;--muted:#a8b8b0;--green:#83caae;--line:#33443f}
+[data-theme="dark"] button{background:#1c2a26;border-color:var(--line)}
+[data-theme="dark"] button:hover{background:#2b4037}
+[data-theme="dark"] button:focus-visible,[data-theme="dark"] a:focus-visible,[data-theme="dark"] input:focus-visible,[data-theme="dark"] select:focus-visible,[data-theme="dark"] textarea:focus-visible{outline:2px solid #83caae;outline-offset:3px}
+[data-theme="dark"] aside,[data-theme="dark"] .stat,[data-theme="dark"] .workspace,[data-theme="dark"] .card,[data-theme="dark"] dialog{background:#182420}
+[data-theme="dark"] select,[data-theme="dark"] input,[data-theme="dark"] textarea{background:#14201c;border-color:#41554b;color:var(--ink)}
+[data-theme="dark"] input::placeholder,[data-theme="dark"] textarea::placeholder{color:#8c9f94;opacity:1}
+[data-theme="dark"] header b,[data-theme="dark"] nav button{color:#bdcfc3}
+[data-theme="dark"] header em{color:#82988c}
+[data-theme="dark"] .space b{background:#304b3c;color:#d4e8db}
+[data-theme="dark"] nav button.active,[data-theme="dark"] .tabs .selected{background:#29493b;color:#a2e0bf}
+[data-theme="dark"] .primary{background:#83caae;border-color:#83caae;color:#10291f}
+[data-theme="dark"] .primary:hover{background:#a1dfc1;border-color:#a1dfc1}
+[data-theme="dark"] .sprintbox{background:#1b3026;border-color:#3c5545}
+[data-theme="dark"] .capacity small,[data-theme="dark"] .sprint-notes label small{color:#a0b9a8}
+[data-theme="dark"] .track{background:#3b5143}
+[data-theme="dark"] .track i{background:#83bc97}
+[data-theme="dark"] .sprint-notes{border-color:#3c5545}
+[data-theme="dark"] .sprint-notes label{color:#c1d7c6}
+[data-theme="dark"] th{background:#1e2e28;color:#b1c4b8}
+[data-theme="dark"] td{border-color:var(--line)}
+[data-theme="dark"] tbody tr:hover{background:#20382d}
+[data-theme="dark"] .tasktitle small,[data-theme="dark"] footer{color:#a1b6a9}
+[data-theme="dark"] .jira{color:#a1cfb6}
+[data-theme="dark"] .badge{color:#c1ccd8;background:#2c3642}
+[data-theme="dark"] .s進行中{color:#f0d38c;background:#483c22}
+[data-theme="dark"] .s已完成{color:#a0dbb6;background:#254331}
+[data-theme="dark"] .s開發中{color:#c2ccfc;background:#343c60}
+[data-theme="dark"] .column{background:#14201c}
+[data-theme="dark"] .card:hover{border-color:#83caae}
+[data-theme="dark"] .day.today{background:#294336}
+[data-theme="dark"] .day .event{background:#304f3c;color:#d8ecdf}
+[data-theme="dark"] #welcome{background:#1b3026;border-color:#5a7a63}
+[data-theme="dark"] dialog{border:1px solid var(--line);box-shadow:0 25px 100px #0009}
+[data-theme="dark"] dialog::backdrop{background:#050d0bb3}
+[data-theme="dark"] .danger{color:#f0b3a9}
+[data-theme="dark"] #toast{background:#b9e5cb;color:#10291f;box-shadow:0 8px 30px #0005}
