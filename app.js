@@ -60,6 +60,11 @@ function filtered() {
     (!q || [t.title,t.jira,t.notes,t.jiraUrl].join(' ').toLowerCase().includes(q)));
 }
 function render() {
+  const goalsOnly = view === 'goals';
+  $('#stats').hidden = goalsOnly;
+  $('.sprintbox').hidden = goalsOnly;
+  $('#heading').textContent = {list:'每一項工作，都有自己的節奏。',board:'把進度攤開，下一步更清楚。',calendar:'為重要的工作，安排好時間。',goals:activeYear+' 年度目標'}[view];
+  $('.intro p').textContent = goalsOnly ? '規劃年度方向，記錄目標與預計完成時程。' : '整理進度、安排下一步，讓工作清楚有序。';
   const a = selected(), done = a.filter(t => t.status === '已完成');
   const undated = a.filter(t => t.status !== '已完成' && (!t.start || !t.end));
   $('#stats').innerHTML = [ ['工作總數',a.length,'項工作'], ['進行中',a.filter(t => t.status === '進行中').length,'持續前進'],
