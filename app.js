@@ -69,6 +69,16 @@ function render() {
   const cap = matches.reduce((n,s) => n+s.capacity,0), points = sum(a);
   $('#sprintTitle').textContent = matches.length ? matches[0].name : activeYear+' 年工作總覽';
   $('#sprintRange').textContent = matches.length ? matches.map(s => s.label).join(' · ') : '所有 Sprint · '+activeYear+' 年度';
+  $('#sprintNotes').innerHTML = matches.length ? matches.map((s, segment) => {
+    const index = data.sprints.indexOf(s);
+    return `<label for="sprint-note-${index}">${matches.length > 1 ? '第 '+(segment+1)+' 段 ' : ''}Sprint 備註 <small>自動儲存</small></label><textarea id="sprint-note-${index}" data-sprint-note="${index}" rows="3" placeholder="例如：11/13 休假一天，容量減少 6 點，調整為 48 點">${esc(s.notes || '')}</textarea>`;
+  }).join('') : '<p class="muted">選擇一個 Sprint，即可記錄放假、休假與點數調整原因。</p>';
+  document.querySelectorAll('[data-sprint-note]').forEach(input => {
+    input.oninput = () => {
+      data.sprints[Number(input.dataset.sprintNote)].notes = input.value;
+      persist();
+    };
+  });
   $('#capacityText').innerHTML = `已填工作點數 <strong>${points}${cap ? ' / '+cap : ''} pt</strong>`;
   $('#capacityBar').style.width = (cap ? Math.min(100, points/cap*100) : 0)+'%';
   $('#capacityBar').style.background = cap && points>cap ? '#c39058' : '';
@@ -181,7 +191,7 @@ function normalizeBackup(raw) {
     if(!s||typeof s.name!=='string'||!s.name.trim()||s.name==='未分配')throw Error('Sprint 格式錯誤');
     const inferred=[...new Set(tasks.filter(t=>t.sprint===s.name).map(t=>t.year))];
     const sprintYears=s.year?[year(s.year)]:(inferred.length?inferred:[fallback]);
-    for(const y of sprintYears){years.add(y);sprints.push({name:s.name,year:y,capacity:point(s.capacity)??0,label:str(s.label||s.name)});}
+    for(const y of sprintYears){years.add(y);sprints.push({name:s.name,year:y,capacity:point(s.capacity)??0,label:str(s.label||s.name),notes:str(s.notes)});}
   }
   for(const t of tasks){if(t.sprint!=='未分配'&&!sprints.some(s=>s.year===t.year&&s.name===t.sprint))sprints.push({name:t.sprint,year:t.year,capacity:0,label:t.sprint});}
   const goalIds=new Set();
@@ -248,7 +258,7 @@ function init() {
   $('#sprintForm').onsubmit=e=>{
     e.preventDefault();const f=Object.fromEntries(new FormData(e.target)),name=f.name.trim();
     if(!name||name==='未分配'||data.sprints.some(s=>s.year===f.year&&s.name===name)){toast('此年度已有同名 Sprint，請使用不同名稱');return;}
-    data.sprints.push({name,year:f.year,capacity:Number(f.capacity),label:[name,f.range,'點數：'+f.capacity].filter(Boolean).join('\n')});
+    data.sprints.push({name,year:f.year,capacity:Number(f.capacity),label:[name,f.range,'點數：'+f.capacity].filter(Boolean).join('\n'),notes:f.notes});
     activeYear=f.year;refreshSelectors();$('#sprint').value=name;save();$('#sprintEditor').close();toast('Sprint 已新增');
   };
   $('#form').elements.year.onchange=e=>{$('#form').elements.sprint.innerHTML=sprintOptions(e.target.value);};
