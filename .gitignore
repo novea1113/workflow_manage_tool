@@ -1,0 +1,12 @@
+# Local data and credentials
+*.xlsx
+*.xls
+*.csv
+*.json
+*.env
+.env*
+.openai/
+node_modules/
+.DS_Store
+*備份*
+*backup*
