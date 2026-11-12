@@ -66,6 +66,7 @@ function render() {
     ['待安排日期',undated.length,'未完成工項'], ['已完成',done.length,a.length ? Math.round(done.length/a.length*100)+'% 完成率' : '尚無工項']
   ].map(([l,n,s]) => `<div class="stat"><label>${l}</label><strong>${n}<small>${s}</small></strong></div>`).join('');
   const matches = data.sprints.filter(s => s.year === activeYear && s.name === $('#sprint').value);
+  $('#editSprint').disabled = !matches.length;
   const cap = matches.reduce((n,s) => n+s.capacity,0), points = sum(a);
   $('#sprintTitle').textContent = matches.length ? matches[0].name : activeYear+' 年工作總覽';
   $('#sprintRange').textContent = matches.length ? matches.map(s => s.label).join(' · ') : '所有 Sprint · '+activeYear+' 年度';
@@ -79,9 +80,9 @@ function render() {
       persist();
     };
   });
-  $('#capacityText').innerHTML = `已填工作點數 <strong>${points}${cap ? ' / '+cap : ''} pt</strong>`;
-  $('#capacityBar').style.width = (cap ? Math.min(100, points/cap*100) : 0)+'%';
-  $('#capacityBar').style.background = cap && points>cap ? '#c39058' : '';
+  $('#capacityText').innerHTML = `已填工作點數 <strong>${points}${matches.length ? ' / '+cap : ''} pt</strong>`;
+  $('#capacityBar').style.width = (cap ? Math.min(100, points/cap*100) : (matches.length && points > 0 ? 100 : 0))+'%';
+  $('#capacityBar').style.background = matches.length && points>cap ? '#c39058' : '';
   const list = filtered();
   $('#count').textContent = `${activeYear} 年 · ${list.length} 項工作`;
   $('#hint').textContent = view === 'goals' ? '點選「編輯」維護年度目標' : '點選工項編輯；Jira 連結可直接開啟';
@@ -132,6 +133,31 @@ function setForm(form, values) {
   for (const [k,v] of Object.entries(values)) {
     const el=form.elements.namedItem(k); if(el)el.value=v ?? '';
   }
+}
+function sprintPeriod(sprint) {
+  if (sprint.range !== undefined) return String(sprint.range);
+  return String(sprint.label || '').split('\n').filter(line => line.trim() && line.trim() !== sprint.name && !/^點數[：:]/.test(line.trim())).join('\n');
+}
+function openSprintEditor(index = -1) {
+  const form = $('#sprintForm');
+  form.reset();
+  const old = index >= 0 ? data.sprints[index] : null;
+  form.elements.editIndex.value = old ? String(index) : '';
+  form.elements.year.innerHTML = yearOptions(old?.year || activeYear);
+  form.elements.year.disabled = !!old;
+  form.elements.name.readOnly = !!old;
+  const matches = data.sprints.map((s,i) => ({s,i})).filter(({s}) => old && s.year === old.year && s.name === old.name);
+  $('#segmentLabel').hidden = matches.length < 2;
+  $('#sprintSegment').innerHTML = matches.map(({s,i},n) => `<option value="${i}" ${i === index ? 'selected' : ''}>第 ${n+1} 段 · ${esc(sprintPeriod(s) || s.name)} · ${s.capacity} 點</option>`).join('');
+  if (old) {
+    form.elements.name.value = old.name;
+    form.elements.capacity.value = old.capacity;
+    form.elements.range.value = sprintPeriod(old).replaceAll('\n',' · ');
+    form.elements.notes.value = old.notes || '';
+  }
+  $('#sprintEditorTitle').textContent = old ? '編輯 Sprint' : '新增 Sprint';
+  $('#saveSprint').textContent = old ? '儲存變更' : '新增 Sprint';
+  if (!$('#sprintEditor').open) $('#sprintEditor').showModal();
 }
 function edit(id) {
   const t=data.tasks.find(t=>t.id===id) || {id:'',year:activeYear,sprint:$('#sprint').value||'未分配',status:'待排程'};
@@ -191,7 +217,7 @@ function normalizeBackup(raw) {
     if(!s||typeof s.name!=='string'||!s.name.trim()||s.name==='未分配')throw Error('Sprint 格式錯誤');
     const inferred=[...new Set(tasks.filter(t=>t.sprint===s.name).map(t=>t.year))];
     const sprintYears=s.year?[year(s.year)]:(inferred.length?inferred:[fallback]);
-    for(const y of sprintYears){years.add(y);sprints.push({name:s.name,year:y,capacity:point(s.capacity)??0,label:str(s.label||s.name),notes:str(s.notes)});}
+    for(const y of sprintYears){years.add(y);sprints.push({name:s.name,year:y,capacity:point(s.capacity)??0,label:str(s.label||s.name),notes:str(s.notes),range:str(s.range ?? sprintPeriod(s))});}
   }
   for(const t of tasks){if(t.sprint!=='未分配'&&!sprints.some(s=>s.year===t.year&&s.name===t.sprint))sprints.push({name:t.sprint,year:t.year,capacity:0,label:t.sprint});}
   const goalIds=new Set();
@@ -253,13 +279,22 @@ function init() {
     if(data.years.includes(y)){toast('此年度已存在，請從上方切換');return;}
     data.years.push(y);data.years.sort();activeYear=y;$('#sprint').value='';refreshSelectors();month=new Date(+y,0,1);save();$('#yearEditor').close();toast('已新增 '+y+' 年度');
   };
-  $('#addSprint').onclick=()=>{$('#sprintForm').reset();$('#sprintForm').elements.year.innerHTML=yearOptions(activeYear);$('#sprintEditor').showModal();};
+  $('#addSprint').onclick=()=>openSprintEditor();
+  $('#editSprint').onclick=()=>{
+    const index=data.sprints.findIndex(s=>s.year===activeYear&&s.name===$('#sprint').value);
+    if(index>=0)openSprintEditor(index);
+  };
+  $('#sprintSegment').onchange=e=>openSprintEditor(Number(e.target.value));
   $('#closeSprint').onclick=()=>$('#sprintEditor').close();
   $('#sprintForm').onsubmit=e=>{
-    e.preventDefault();const f=Object.fromEntries(new FormData(e.target)),name=f.name.trim();
-    if(!name||name==='未分配'||data.sprints.some(s=>s.year===f.year&&s.name===name)){toast('此年度已有同名 Sprint，請使用不同名稱');return;}
-    data.sprints.push({name,year:f.year,capacity:Number(f.capacity),label:[name,f.range,'點數：'+f.capacity].filter(Boolean).join('\n'),notes:f.notes});
-    activeYear=f.year;refreshSelectors();$('#sprint').value=name;save();$('#sprintEditor').close();toast('Sprint 已新增');
+    e.preventDefault();const f=Object.fromEntries(new FormData(e.target));
+    const index=f.editIndex===''?-1:Number(f.editIndex),old=index>=0?data.sprints[index]:null;
+    const name=old?old.name:f.name.trim(),year=old?old.year:f.year,capacity=Number(f.capacity);
+    if(!Number.isFinite(capacity)||capacity<0){toast('容量點數請填入零或正數');return;}
+    if(!old&&(!name||name==='未分配'||data.sprints.some(s=>s.year===year&&s.name===name))){toast('此年度已有同名 Sprint，請使用不同名稱');return;}
+    const sprint={name,year,capacity,range:f.range,notes:f.notes,label:[name,f.range,'點數：'+capacity].filter(Boolean).join('\n')};
+    if(old)Object.assign(old,sprint);else data.sprints.push(sprint);
+    activeYear=year;refreshSelectors();$('#sprint').value=name;save();$('#sprintEditor').close();toast(old?'Sprint 已更新':'Sprint 已新增');
   };
   $('#form').elements.year.onchange=e=>{$('#form').elements.sprint.innerHTML=sprintOptions(e.target.value);};
   $('#close').onclick=()=>$('#editor').close();
@@ -290,7 +325,7 @@ function init() {
   render();
   if(storageFailed){
     $('#saved').textContent='現有資料無法讀取，請勿新增或匯入覆蓋；先匯出原始資料';
-    for(const id of ['add','welcomeAdd','addSprint','addYear','restore','welcomeImport'])$('#'+id).disabled=true;
+    for(const id of ['add','welcomeAdd','addSprint','editSprint','addYear','restore','welcomeImport'])$('#'+id).disabled=true;
     $('#backup').onclick=$('#backupTop').onclick=()=>{
       $('#backupText').value=raw||'';$('#backupStatus').textContent='原始資料讀取異常，請先下載或複製此內容保存。';$('#backupEditor').showModal();
     };
