@@ -228,8 +228,11 @@ function init() {
   $('#import').onchange=async e=>{
     try {
       if(!e.target.files[0])return;
-      const next=normalizeBackup(JSON.parse(await e.target.files[0].text()));
-      if(!confirm(`匯入 ${next.years.length} 個年度、${next.tasks.length} 項工作、${next.goals.length} 項目標，取代目前全部年度資料？請先匯出現有備份。`))return;
+      const file=e.target.files[0];
+      toast('正在本機讀取檔案，請稍候…');
+      const isExcel=/\.xlsx$/i.test(file.name);
+      const next=normalizeBackup(isExcel?await importWorkExcel(file):JSON.parse(await file.text()));
+      if(!confirm(`${isExcel?'只讀取「個人工作紀錄-2026」分頁。\n':''}匯入 ${next.years.length} 個年度、${next.tasks.length} 項工作、${next.goals.length} 項目標，取代目前全部年度資料？請先匯出現有備份。`))return;
       localStorage.setItem(key,JSON.stringify(next));location.reload();
     }catch(error){toast('匯入失敗：'+error.message+'。目前資料未更動。');}
     e.target.value='';
