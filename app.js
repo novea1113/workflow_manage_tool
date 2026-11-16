@@ -62,6 +62,7 @@ function filtered() {
 function render() {
   const goalsOnly = view === 'goals';
   $('#stats').hidden = goalsOnly;
+  $('#goalImportControls').hidden = !goalsOnly;
   $('.sprintbox').hidden = goalsOnly;
   $('#heading').textContent = {list:'每一項工作，都有自己的節奏。',board:'把進度攤開，下一步更清楚。',calendar:'為重要的工作，安排好時間。',goals:activeYear+' 年度目標'}[view];
   $('.intro p').textContent = goalsOnly ? '規劃年度方向，記錄目標與預計完成時程。' : '整理進度、安排下一步，讓工作清楚有序。';
@@ -327,10 +328,11 @@ function init() {
     const rows=[['年度','Sprint','使用/預估點數','工項','Jira 編號','Jira 連結','文件','文件連結','起始日期','結束日期','狀態','備註'],...filtered().map(t=>cols.map(k=>t[k]??''))];
     download('工作排程-'+activeYear+'.csv','\ufeff'+rows.map(r=>r.map(x=>'"'+csvValue(x).replaceAll('"','""')+'"').join(',')).join('\r\n'),'text/csv;charset=utf-8');
   };
+  initGoalImport();
   render();
   if(storageFailed){
     $('#saved').textContent='現有資料無法讀取，請勿新增或匯入覆蓋；先匯出原始資料';
-    for(const id of ['add','welcomeAdd','addSprint','editSprint','addYear','restore','welcomeImport'])$('#'+id).disabled=true;
+    for(const id of ['add','welcomeAdd','addSprint','editSprint','addYear','restore','welcomeImport','importGoals'])$('#'+id).disabled=true;
     $('#backup').onclick=$('#backupTop').onclick=()=>{
       $('#backupText').value=raw||'';$('#backupStatus').textContent='原始資料讀取異常，請先下載或複製此內容保存。';$('#backupEditor').showModal();
     };

@@ -49,3 +49,5 @@
 [data-theme="dark"] #toast{background:#bdd7ff;color:#102442;box-shadow:0 8px 30px #0005}
 
 #goalForm textarea[name="release"]{resize:both;max-width:100%;min-width:120px;min-height:90px;line-height:1.7}.goalgrid small{display:block;white-space:pre-wrap;overflow-wrap:anywhere}
+
+.goal-import-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:18px 22px;border-bottom:1px solid var(--line)}.goal-import-controls[hidden]{display:none}.goal-import-controls span{font-size:12px;color:var(--muted)}#goalImportEditor{width:960px}#goalImportEditor label{margin:14px 0}#goalImportEditor select,#goalImportEditor input[type="file"]{display:block;width:100%;margin-top:8px}.replace-goals{display:flex;align-items:flex-start;gap:8px;line-height:1.7}.replace-goals input{margin-top:5px}#goalImportMessage{white-space:pre-wrap}#goalImportPreview{overflow-x:auto;max-height:380px}#goalImportPreview table{min-width:560px}#goalImportPreview td{vertical-align:top;max-width:500px}#goalImportPreview tbody tr{cursor:default}.goal-diff p{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px}#goalImportPreview summary{cursor:pointer;color:var(--accent);padding:5px 0}

@@ -1,6 +1,6 @@
 'use strict';
 // Read the requested worksheet locally. No spreadsheet data leaves the browser.
-async function importWorkExcel(file) {
+async function importWorkExcel(file, options = {}) {
   const bytes = new Uint8Array(await file.arrayBuffer());
   const zip = new DataView(bytes.buffer);
   const decoder = new TextDecoder('utf-8');
@@ -54,8 +54,11 @@ async function importWorkExcel(file) {
   }
   const workbookPath = 'xl/workbook.xml';
   const workbook = await readXML(workbookPath);
-  const sheet = xmlNodes(workbook, 'sheet').find(s => s.getAttribute('name') === '個人工作紀錄-2026');
-  if (!sheet) throw Error('找不到「個人工作紀錄-2026」分頁，請選擇原始紀錄試算表');
+  const sheets = xmlNodes(workbook, 'sheet');
+  if (options.listSheets) return sheets.map(s => s.getAttribute('name'));
+  const requestedSheet = options.sheetName || '個人工作紀錄-2026';
+  const sheet = sheets.find(s => s.getAttribute('name') === requestedSheet);
+  if (!sheet) throw Error('找不到「'+requestedSheet+'」分頁，請選擇正確的工作表');
   const workbookRels = await readXML('xl/_rels/workbook.xml.rels');
   const relationId = sheet.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'id') || sheet.getAttribute('r:id');
   const relation = xmlNodes(workbookRels, 'Relationship').find(r => r.getAttribute('Id') === relationId);
@@ -115,6 +118,7 @@ async function importWorkExcel(file) {
     hyperlinks.set(h.getAttribute('ref'), relationships.get(id) || '');
   }
   const url = (row,col,merged = false) => hyperlinks.get(cellRef(row,col,merged)) || '';
+  if (options.goalsOnly) return parseGoalWorksheet({get, maxRow, date});
   if (clean(get(2,3)) !== '工項' || clean(get(2,8)) !== '狀態') throw Error('分頁欄位與原始紀錄格式不同，未匯入任何資料');
   let goalHeading = maxRow + 1;
   for (let row=3; row<=maxRow; row++) if (/工作項目目標/.test(clean(get(row,1)))) {goalHeading=row;break;}
