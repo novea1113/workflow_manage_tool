@@ -47,3 +47,5 @@
 [data-theme="dark"] dialog::backdrop{background:#050d1cb3}
 [data-theme="dark"] .danger{color:#f0b3a9}
 [data-theme="dark"] #toast{background:#bdd7ff;color:#102442;box-shadow:0 8px 30px #0005}
+
+#goalForm textarea[name="release"]{resize:both;max-width:100%;min-width:120px;min-height:90px;line-height:1.7}.goalgrid small{display:block;white-space:pre-wrap;overflow-wrap:anywhere}
