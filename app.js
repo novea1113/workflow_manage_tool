@@ -76,9 +76,9 @@ function render() {
   const cap = matches.reduce((n,s) => n+s.capacity,0), points = sum(a);
   $('#sprintTitle').textContent = matches.length ? matches[0].name : activeYear+' 年工作總覽';
   $('#sprintRange').textContent = matches.length ? matches.map(s => s.label).join(' · ') : '所有 Sprint · '+activeYear+' 年度';
-  $('#sprintNotes').innerHTML = matches.length ? matches.map((s, segment) => {
+  $('#sprintNotes').innerHTML = matches.length ? matches.map(s => {
     const index = data.sprints.indexOf(s);
-    return `<label for="sprint-note-${index}">${matches.length > 1 ? '第 '+(segment+1)+' 段 ' : ''}Sprint 備註 <small>自動儲存</small></label><textarea id="sprint-note-${index}" data-sprint-note="${index}" rows="3" placeholder="例如：11/13 休假一天，容量減少 6 點，調整為 48 點">${esc(s.notes || '')}</textarea>`;
+    return `<label for="sprint-note-${index}">Sprint 備註 <small>自動儲存</small></label><textarea id="sprint-note-${index}" data-sprint-note="${index}" rows="3" placeholder="例如：11/13 休假一天，容量減少 6 點，調整為 48 點">${esc(s.notes || '')}</textarea>`;
   }).join('') : '<p class="muted">選擇一個 Sprint，即可記錄放假、休假與點數調整原因。</p>';
   document.querySelectorAll('[data-sprint-note]').forEach(input => {
     input.oninput = () => {
@@ -144,6 +144,23 @@ function sprintPeriod(sprint) {
   if (sprint.range !== undefined) return String(sprint.range);
   return String(sprint.label || '').split('\n').filter(line => line.trim() && line.trim() !== sprint.name && !/^點數[：:]/.test(line.trim())).join('\n');
 }
+function mergeSprintRecords(sprints) {
+  const groups = new Map();
+  for (const sprint of sprints) {
+    const groupKey = JSON.stringify([sprint.year,sprint.name]);
+    if (!groups.has(groupKey)) groups.set(groupKey,[]);
+    groups.get(groupKey).push(sprint);
+  }
+  return [...groups.values()].map(records => {
+    if (records.length === 1) return records[0];
+    const first = records[0];
+    const unique = values => [...new Set(values.map(v=>String(v || '').trim()).filter(Boolean))];
+    const capacity = records.reduce((total,s)=>total+s.capacity,0);
+    const range = unique(records.map(sprintPeriod)).join(' · ');
+    const notes = unique(records.map(s=>s.notes)).join('\n\n');
+    return {...first,capacity,range,notes,label:[first.name,range,'點數：'+capacity].filter(Boolean).join('\n')};
+  });
+}
 function openSprintEditor(index = -1) {
   const form = $('#sprintForm');
   form.reset();
@@ -152,9 +169,6 @@ function openSprintEditor(index = -1) {
   form.elements.year.innerHTML = yearOptions(old?.year || activeYear);
   form.elements.year.disabled = !!old;
   form.elements.name.readOnly = !!old;
-  const matches = data.sprints.map((s,i) => ({s,i})).filter(({s}) => old && s.year === old.year && s.name === old.name);
-  $('#segmentLabel').hidden = matches.length < 2;
-  $('#sprintSegment').innerHTML = matches.map(({s,i},n) => `<option value="${i}" ${i === index ? 'selected' : ''}>第 ${n+1} 段 · ${esc(sprintPeriod(s) || s.name)} · ${s.capacity} 點</option>`).join('');
   if (old) {
     form.elements.name.value = old.name;
     form.elements.capacity.value = old.capacity;
@@ -234,7 +248,7 @@ function normalizeBackup(raw) {
     return {id,year:y,...Object.fromEntries(['title','description','backend','frontend','release'].map(k=>[k,str(g[k])]))};
   });
   if(!years.size)years.add(currentYear());
-  return {schemaVersion:2,years:[...years].sort(),tasks,sprints,goals};
+  return {schemaVersion:2,years:[...years].sort(),tasks,sprints:mergeSprintRecords(sprints),goals};
 }
 function init() {
   const seed={schemaVersion:2,years:[currentYear()],tasks:[],sprints:[],goals:[]};
@@ -290,7 +304,6 @@ function init() {
     const index=data.sprints.findIndex(s=>s.year===activeYear&&s.name===$('#sprint').value);
     if(index>=0)openSprintEditor(index);
   };
-  $('#sprintSegment').onchange=e=>openSprintEditor(Number(e.target.value));
   $('#closeSprint').onclick=()=>$('#sprintEditor').close();
   $('#sprintForm').onsubmit=e=>{
     e.preventDefault();const f=Object.fromEntries(new FormData(e.target));
