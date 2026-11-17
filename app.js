@@ -109,8 +109,8 @@ function render() {
   document.querySelectorAll('[data-goal]').forEach(el => el.onclick = () => editGoal(el.dataset.goal));
 }
 function renderList(a) {
-  $('#content').innerHTML = a.length ? `<table><thead><tr><th>工項 / Sprint</th><th>Jira 連結</th><th>狀態</th><th>點數</th><th>工作日期</th><th>文件</th><th></th></tr></thead><tbody>${a.map(t =>
-    `<tr data-id="${esc(t.id)}" tabindex="0"><td class="tasktitle">${esc(t.title)}<small>${esc(t.sprint)}</small></td><td class="jira-cell">${link(t.jiraUrl,t.jira)}</td><td>${badge(t.status)}</td><td>${t.points ?? '—'}</td><td class="dates">${fmt(t.start)} → ${fmt(t.end)}</td><td>${link(t.docUrl,t.document)}</td><td>↗</td></tr>`
+  $('#content').innerHTML = a.length ? `<table><thead><tr><th>工項 / Sprint</th><th>Jira 連結</th><th>狀態</th><th>點數</th><th>工作日期</th><th>文件</th><th>操作</th></tr></thead><tbody>${a.map(t =>
+    `<tr data-id="${esc(t.id)}" tabindex="0"><td class="tasktitle">${esc(t.title)}<small>${esc(t.sprint)}</small></td><td class="jira-cell">${link(t.jiraUrl,t.jira)}</td><td>${badge(t.status)}</td><td>${t.points ?? '—'}</td><td class="dates">${fmt(t.start)} → ${fmt(t.end)}</td><td>${link(t.docUrl,t.document)}</td><td><button type="button" class="task-edit" title="編輯工項" aria-label="編輯工項：${esc(t.title)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 5 5-12 12H4v-5L16 3Z"/><path d="m14 5 5 5"/></svg></button></td></tr>`
   ).join('')}</tbody></table>` : '<div class="empty">目前沒有符合條件的工作。可新增工作或調整篩選。</div>';
 }
 function renderBoard(a) {

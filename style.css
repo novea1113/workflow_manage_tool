@@ -54,3 +54,5 @@
 
 .breadcrumb{display:flex;align-items:center;gap:12px;flex-wrap:wrap}#sidebarToggle{white-space:nowrap;font-size:12px;padding:9px 12px}#sidebar[hidden],:root[data-sidebar="collapsed"] #sidebar{display:none}:root[data-sidebar="collapsed"] main{margin-left:0}@media(max-width:720px){.breadcrumb{gap:8px}#sidebarToggle{font-size:11px;padding:8px}}
 header{flex-wrap:wrap;gap:12px;height:auto;min-height:76px;padding:16px 0}.year-tools{margin-left:auto}
+
+.task-edit{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;padding:8px;color:var(--accent);border-color:transparent;background:transparent}.task-edit:hover{background:var(--line)}.task-edit svg{width:18px;height:18px;pointer-events:none}
