@@ -91,7 +91,7 @@ function render(keepList = false) {
   $('#capacityBar').style.background = matches.length && points>cap ? '#c39058' : '';
   const list = filtered();
   $('#count').textContent = `${activeYear} 年 · ${list.length} 項工作`;
-  $('#hint').textContent = view === 'goals' ? '點選「編輯」維護年度目標' : view === 'list' ? '狀態與日期可直接修改，自動儲存' : '點選工項編輯；Jira 連結可直接開啟';
+  $('#hint').textContent = view === 'goals' ? '點選「編輯」維護年度目標' : view === 'list' ? '拖曳左側把手排序；狀態與日期可直接修改' : '點選工項編輯；Jira 連結可直接開啟';
   $('#add').textContent = view === 'goals' ? '＋ 新增年度目標' : '＋ 新增工作';
   $('.toolbar').hidden = view === 'goals';
   if (view === 'list' && keepList !== true) renderList(list);
@@ -113,10 +113,11 @@ function render(keepList = false) {
   });
   document.querySelectorAll('[data-goal]').forEach(el => el.onclick = () => editGoal(el.dataset.goal));
   bindInlineTaskEditors();
+  bindTaskSorting();
 }
 function renderList(a) {
-  $('#content').innerHTML = a.length ? `<table><thead><tr><th>工項 / Sprint</th><th>Jira 連結</th><th>狀態</th><th>點數</th><th>工作日期</th><th>文件</th><th>操作</th></tr></thead><tbody>${a.map(t =>
-    `<tr data-id="${esc(t.id)}" tabindex="0"><td class="tasktitle">${esc(t.title)}<small>${esc(t.sprint)}</small></td><td class="jira-cell">${link(t.jiraUrl,t.jira)}</td><td class="inline-cell"><select class="badge inline-status s${esc(t.status)}" data-inline-task="${esc(t.id)}" data-inline-field="status" aria-label="狀態：${esc(t.title)}">${statuses.map(status=>`<option value="${status}" ${status===t.status?'selected':''}>${status}</option>`).join('')}</select></td><td>${t.points ?? '—'}</td><td class="inline-cell"><div class="inline-dates"><label><span>起始</span><input type="date" class="inline-date" value="${esc(t.start)}" data-inline-task="${esc(t.id)}" data-inline-field="start" aria-label="起始日期：${esc(t.title)}"></label><label><span>結束</span><input type="date" class="inline-date" value="${esc(t.end)}" data-inline-task="${esc(t.id)}" data-inline-field="end" aria-label="結束日期：${esc(t.title)}"></label></div></td><td>${link(t.docUrl,t.document)}</td><td><button type="button" class="task-edit" title="編輯工項" aria-label="編輯工項：${esc(t.title)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 5 5-12 12H4v-5L16 3Z"/><path d="m14 5 5 5"/></svg></button></td></tr>`
+  $('#content').innerHTML = a.length ? `<table><thead><tr><th class="sort-column" aria-label="排序">排序</th><th>工項 / Sprint</th><th>Jira 連結</th><th>狀態</th><th>點數</th><th>工作日期</th><th>文件</th><th>操作</th></tr></thead><tbody>${a.map(t =>
+    `<tr data-id="${esc(t.id)}" tabindex="0"><td class="sort-cell"><button type="button" class="task-sort-handle" data-sort-task="${esc(t.id)}" title="拖曳排序，也可用上下方向鍵移動" aria-label="排序工項：${esc(t.title)}" aria-describedby="taskSortHelp"><svg width="18" height="22" viewBox="0 0 18 22" fill="currentColor" aria-hidden="true"><circle cx="6" cy="6" r="1.5"/><circle cx="12" cy="6" r="1.5"/><circle cx="6" cy="11" r="1.5"/><circle cx="12" cy="11" r="1.5"/><circle cx="6" cy="16" r="1.5"/><circle cx="12" cy="16" r="1.5"/></svg></button></td><td class="tasktitle">${esc(t.title)}<small>${esc(t.sprint)}</small></td><td class="jira-cell">${link(t.jiraUrl,t.jira)}</td><td class="inline-cell"><select class="badge inline-status s${esc(t.status)}" data-inline-task="${esc(t.id)}" data-inline-field="status" aria-label="狀態：${esc(t.title)}">${statuses.map(status=>`<option value="${status}" ${status===t.status?'selected':''}>${status}</option>`).join('')}</select></td><td>${t.points ?? '—'}</td><td class="inline-cell"><div class="inline-dates"><label><span>起始</span><input type="date" class="inline-date" value="${esc(t.start)}" data-inline-task="${esc(t.id)}" data-inline-field="start" aria-label="起始日期：${esc(t.title)}"></label><label><span>結束</span><input type="date" class="inline-date" value="${esc(t.end)}" data-inline-task="${esc(t.id)}" data-inline-field="end" aria-label="結束日期：${esc(t.title)}"></label></div></td><td>${link(t.docUrl,t.document)}</td><td><button type="button" class="task-edit" title="編輯工項" aria-label="編輯工項：${esc(t.title)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 5 5-12 12H4v-5L16 3Z"/><path d="m14 5 5 5"/></svg></button></td></tr>`
   ).join('')}</tbody></table>` : '<div class="empty">目前沒有符合條件的工作。可新增工作或調整篩選。</div>';
 }
 function bindInlineTaskEditors() {
