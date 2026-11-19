@@ -59,7 +59,7 @@ function filtered() {
     (mode !== 'open' || t.status !== '已完成') && (mode !== 'undated' || !t.start || !t.end) &&
     (!q || [t.title,t.jira,t.notes,t.jiraUrl].join(' ').toLowerCase().includes(q)));
 }
-function render() {
+function render(keepList = false) {
   const goalsOnly = view === 'goals';
   $('#stats').hidden = goalsOnly;
   $('#goalImportControls').hidden = !goalsOnly;
@@ -91,10 +91,15 @@ function render() {
   $('#capacityBar').style.background = matches.length && points>cap ? '#c39058' : '';
   const list = filtered();
   $('#count').textContent = `${activeYear} 年 · ${list.length} 項工作`;
-  $('#hint').textContent = view === 'goals' ? '點選「編輯」維護年度目標' : '點選工項編輯；Jira 連結可直接開啟';
+  $('#hint').textContent = view === 'goals' ? '點選「編輯」維護年度目標' : view === 'list' ? '狀態與日期可直接修改，自動儲存' : '點選工項編輯；Jira 連結可直接開啟';
   $('#add').textContent = view === 'goals' ? '＋ 新增年度目標' : '＋ 新增工作';
   $('.toolbar').hidden = view === 'goals';
-  if (view === 'list') renderList(list);
+  if (view === 'list' && keepList !== true) renderList(list);
+  if (view === 'list' && keepList === true) {
+    const visible = new Set(list.map(t => t.id));
+    document.querySelectorAll('tbody tr[data-id]').forEach(row => {if (!visible.has(row.dataset.id)) row.remove();});
+    if (!list.length) renderList([]);
+  }
   if (view === 'board') renderBoard(list);
   if (view === 'calendar') renderCalendar(list);
   if (view === 'goals') renderGoals();
@@ -107,11 +112,53 @@ function render() {
     el.onclick = e => e.stopPropagation(); el.onkeydown = e => e.stopPropagation();
   });
   document.querySelectorAll('[data-goal]').forEach(el => el.onclick = () => editGoal(el.dataset.goal));
+  bindInlineTaskEditors();
 }
 function renderList(a) {
   $('#content').innerHTML = a.length ? `<table><thead><tr><th>工項 / Sprint</th><th>Jira 連結</th><th>狀態</th><th>點數</th><th>工作日期</th><th>文件</th><th>操作</th></tr></thead><tbody>${a.map(t =>
-    `<tr data-id="${esc(t.id)}" tabindex="0"><td class="tasktitle">${esc(t.title)}<small>${esc(t.sprint)}</small></td><td class="jira-cell">${link(t.jiraUrl,t.jira)}</td><td>${badge(t.status)}</td><td>${t.points ?? '—'}</td><td class="dates">${fmt(t.start)} → ${fmt(t.end)}</td><td>${link(t.docUrl,t.document)}</td><td><button type="button" class="task-edit" title="編輯工項" aria-label="編輯工項：${esc(t.title)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 5 5-12 12H4v-5L16 3Z"/><path d="m14 5 5 5"/></svg></button></td></tr>`
+    `<tr data-id="${esc(t.id)}" tabindex="0"><td class="tasktitle">${esc(t.title)}<small>${esc(t.sprint)}</small></td><td class="jira-cell">${link(t.jiraUrl,t.jira)}</td><td class="inline-cell"><select class="badge inline-status s${esc(t.status)}" data-inline-task="${esc(t.id)}" data-inline-field="status" aria-label="狀態：${esc(t.title)}">${statuses.map(status=>`<option value="${status}" ${status===t.status?'selected':''}>${status}</option>`).join('')}</select></td><td>${t.points ?? '—'}</td><td class="inline-cell"><div class="inline-dates"><label><span>起始</span><input type="date" class="inline-date" value="${esc(t.start)}" data-inline-task="${esc(t.id)}" data-inline-field="start" aria-label="起始日期：${esc(t.title)}"></label><label><span>結束</span><input type="date" class="inline-date" value="${esc(t.end)}" data-inline-task="${esc(t.id)}" data-inline-field="end" aria-label="結束日期：${esc(t.title)}"></label></div></td><td>${link(t.docUrl,t.document)}</td><td><button type="button" class="task-edit" title="編輯工項" aria-label="編輯工項：${esc(t.title)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 5 5-12 12H4v-5L16 3Z"/><path d="m14 5 5 5"/></svg></button></td></tr>`
   ).join('')}</tbody></table>` : '<div class="empty">目前沒有符合條件的工作。可新增工作或調整篩選。</div>';
+}
+function bindInlineTaskEditors() {
+  // Clicking native controls or their labels must not invoke the row editor.
+  document.querySelectorAll('.inline-cell').forEach(cell => {
+    cell.onclick = event => event.stopPropagation();
+    cell.onkeydown = event => event.stopPropagation();
+  });
+  document.querySelectorAll('[data-inline-task]').forEach(control => {
+    control.onchange = () => {
+      const task = data.tasks.find(t => t.id === control.dataset.inlineTask);
+      const field = control.dataset.inlineField;
+      if (!task || !['status','start','end'].includes(field)) return;
+      const value = control.value;
+      if (field === 'status' && !statuses.includes(value)) return;
+      if (field !== 'status' && (!control.validity.valid || (value && (!/^\d{4}-\d{2}-\d{2}$/.test(value) || !Number.isFinite(Date.parse(value)) || new Date(value).toISOString().slice(0,10) !== value)))) {
+        toast('請輸入完整、有效的日期');
+        return;
+      }
+      const start = field === 'start' ? value : task.start;
+      const end = field === 'end' ? value : task.end;
+      if (start && end && end < start) {
+        control.value = task[field] || '';
+        toast('結束日期不能早於起始日期，日期尚未變更');
+        return;
+      }
+      if (task[field] === value) return;
+      task[field] = value;
+      persist();
+      // Keep date inputs mounted so typing and the native picker keep focus.
+      // Status changes may remove a row immediately when a filter is active.
+      render(field !== 'status');
+      if (field === 'status') {
+        const next = [...document.querySelectorAll('[data-inline-task]')].find(input => input.dataset.inlineTask === task.id && input.dataset.inlineField === field);
+        if (next) next.focus({preventScroll:true});
+      }
+    };
+    if (control.type === 'date') control.onblur = () => {
+      const task = data.tasks.find(t => t.id === control.dataset.inlineTask);
+      if (task && control.value !== (task[control.dataset.inlineField] || '')) control.value = task[control.dataset.inlineField] || '';
+    };
+  });
 }
 function renderBoard(a) {
   $('#content').innerHTML = `<div class="board">${statuses.map(s => `<div class="column"><h3>${badge(s)} · ${a.filter(t=>t.status===s).length}</h3>${a.filter(t=>t.status===s).map(t =>
